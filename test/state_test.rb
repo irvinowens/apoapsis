@@ -1,9 +1,12 @@
 require 'minitest/autorun'
-require 'apoapsis/state'
+require_relative '../lib/apoapsis'
 
 class StateTest < Minitest::Test
   def setup
-    @state= State.instance
+    @state= Apoapsis::State.instance
+  end
+
+  def teardown
   end
 
   # Will test adding an entry to the state object
@@ -15,14 +18,25 @@ class StateTest < Minitest::Test
   end
 
   def test_thread_add_get_entry
-    Thread.new {
+    t1=Thread.new {
       @state.push(key: 'test', value: { :ballin_hard => 'true',
                                         :city => 'Atlanta'})
     }
-    Thread.new {
+    t2=Thread.new {
+      sleep 0.5
       @state.push(key: 'test', value: { :ballin_hard => 'true',
-                                        :city => 'Fooillmatic'})
+                                        :city => 'Philadelphia'})
     }
-    assert_equal(@state.get(key:'test')[:city],'Foolillmatic')
+    t1.join
+    t2.join
+    assert_equal('Philadelphia',@state.get(key:'test')[:city])
+  end
+
+  def test_same_process_update
+    @state.push(key: 'test', value: { :ballin_hard => 'true',
+                                      :city => 'Atlanta'})
+    @state.push(key: 'test', value: { :ballin_hard => 'true',
+                                      :city => 'Philadelphia'})
+    assert_equal('Philadelphia',@state.get(key:'test')[:city])
   end
 end

@@ -4,6 +4,10 @@
 #
 # This class is a singleton as it needs to coordinate update transactions
 # across systems, and as such it's external methods are thread safe
+#
+# To make sure that a power outage will not cause data loss, each state change
+# will be written to disk, and the get and push operations will not return until
+# a successful state change
 
 require 'singleton'
 
@@ -16,9 +20,8 @@ module Apoapsis
     # manipulate the global_state from outside, but they don't want to violate
     # consistency they can wait on the semaphore
 
-    attr_reader :semaphore
-
-    attr_reader :global_state
+    @@semaphore = nil
+    @@global_state = nil
 
     # We want to set up our map so that it can be used, maybe we will want to
     # have some sort of passivization tech behind our hash so it is easy to
@@ -29,16 +32,16 @@ module Apoapsis
     # it should always be able to call into a wrapper module for the config
 
     def initialize
-      @global_state = {}
-      @semaphore= Mutex.new
+      @@global_state = {}
+      @@semaphore= Mutex.new
     end
 
     # The internal actions of reading and writing state will be wrapped in this
     # transaction, it will take a block and said block of code will only be
     # executed in sequence
 
-    def transaction &block
-      semaphore.synchronize{
+    def transaction(&block)
+      @@semaphore.synchronize{
         block.call
       }
     end
@@ -56,10 +59,12 @@ module Apoapsis
       key || raise(ArgumentError, 'A key must be provided')
       original_value = nil
       transaction {
-        original_value=@global_state[scope + '-' + key]
+        original_value=@@global_state[scope + '-' + key]
       }
       transaction {
-        @global_state[scope + '-' + key] = value
+        @@global_state[scope + '-' + key] = value
+        Apoapsis.log.debug "Setting local key #{scope + '-' + key} to "+
+               "#{value.inspect}"
       }
       return original_value
     end
@@ -71,7 +76,7 @@ module Apoapsis
       key || raise(ArgumentError, 'A key must be provided')
       result= nil
       transaction {
-        result= @global_state[scope + '-' + key]
+        result= @@global_state[scope + '-' + key]
       }
       return result
     end
