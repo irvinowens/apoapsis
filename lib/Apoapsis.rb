@@ -1,6 +1,8 @@
 require 'apoapsis/version'
 require 'apoapsis/state'
 require 'apoapsis/network'
+require 'apoapsis/distributable'
+require 'apoapsis/system'
 require 'fileutils'
 module Apoapsis
   FileUtils.mkpath '/var/log/apoapsis/' unless File.exists?('/var/log/apoapsis')

@@ -3,20 +3,17 @@
 
 require 'eventmachine'
 require 'logger'
+require 'singleton'
 
 module Apoapsis
-
-  @@sync=nil
-  @@execute=nil
-
-  # The sync module will handle messages coming in for this server with the intent
-  # of keeping the global execution state current
+  # The sync module will handle messages coming in for this server with the
+  # intent of keeping the global execution state current
 
   module Sync
     # Handle inbound data messages
 
     def receive_data(data)
-
+      # Handle inbound state store sync
     end
   end
 
@@ -26,7 +23,7 @@ module Apoapsis
 
   module Execute
     def receive_data(data)
-
+      # Queue and perform an inbound execution task
     end
   end
 
@@ -57,33 +54,42 @@ module Apoapsis
     end
   end
 
-  def startup
+  # The network class will facilitate communication across machines
 
-    # Start up the sync listener
+  class Network
+    include Singleton
 
-    @@sync=fork{
-        EventMachine::run do
-          host = '0.0.0.0'
-          port = 6169
+    attr_accessor :sync, :execute
 
-          EventMachine::start_server host, port, Sync
-        end
-      }
+      def startup
 
-    # start up the execution listener
+        # Start up the sync listener
 
-    @@execute=fork{
-      EventMachine::run do
-        host = '0.0.0.0'
-        port = 6170
+        @sync=Thread.new{
+            EventMachine::run do
+              host = '0.0.0.0'
+              port = 6169
 
-        EventMachine::start_server host, port, Execute
+              EventMachine::start_server host, port, Sync
+            end
+          }
+
+        # start up the execution listener
+
+        @execute=Thread.new{
+          EventMachine::run do
+            host = '0.0.0.0'
+            port = 6170
+
+            EventMachine::start_server host, port, Execute
+          end
+        }
+        Thread.join(@execute)
+        Thread.join(@sync)
       end
-    }
 
-  end
-
-  def shutdown
-    EventMachine::stop_event_loop
-  end
+      def shutdown
+        EventMachine::stop_event_loop
+      end
+    end
 end
