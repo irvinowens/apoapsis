@@ -81,5 +81,21 @@ module Apoapsis
       return result
     end
 
+    # Will sort the keys and return them in ascending order
+
+    def sorted_keys
+      keys=nil
+      transaction{
+        keys=@@global_state.keys.sort
+      }
+      return keys
+    end
+
+    def remove(item_key)
+      transaction{
+        @@global_state.delete item_key
+      }
+    end
+
   end
 end

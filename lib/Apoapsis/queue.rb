@@ -16,8 +16,12 @@ module Apoapsis
       @apo_state = Apoapsis::State.instance
     end
 
-    def queue_block(&block)
-      @apo_state
+    def queue_job(json_arg)
+      @apo_state.push(Time.now.to_i.to_s,json_arg)
+    end
+
+    def get_next_job
+      keys=@apo_state.sorted_keys
     end
   end
 end

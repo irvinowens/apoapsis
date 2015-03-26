@@ -3,6 +3,7 @@
 
 require 'eventmachine'
 require 'logger'
+require 'queue'
 require 'singleton'
 
 module Apoapsis
@@ -14,16 +15,9 @@ module Apoapsis
 
     def receive_data(data)
       # Handle inbound state store sync
-    end
-  end
-
-  # The execute module will receive content related to running a process with
-  # the intent to return a job id to the caller, process the task and call back
-  # with the job id and the result
-
-  module Execute
-    def receive_data(data)
-      # Queue and perform an inbound execution task
+      # queue the work for the running thread
+      Apoapsis::Queue.instance.queue_job(JSON.parse(data))
+      Apoapsis.log.debug "Queued job : #{data}"
     end
   end
 
@@ -38,15 +32,10 @@ module Apoapsis
       @server_list=servers
       servers.each do |server|
         connect_sync server:server[:addr], port: server[:port]
-        connect_execute server:server[:addr], port: server[:port]
       end
     end
     def connect(server: nil, port: nil, mod: nil)
       EventMachine::connect server, port, mod
-    end
-
-    def connect_execute(server: nil, port: nil)
-      connect(server: server, port: port, module:Apoapsis::Execute)
     end
 
     def connect_sync(server: nil, port: nil)
@@ -59,7 +48,7 @@ module Apoapsis
   class Network
     include Singleton
 
-    attr_accessor :sync, :execute
+    attr_accessor :sync
 
       def startup
 
@@ -73,18 +62,6 @@ module Apoapsis
               EventMachine::start_server host, port, Sync
             end
           }
-
-        # start up the execution listener
-
-        @execute=Thread.new{
-          EventMachine::run do
-            host = '0.0.0.0'
-            port = 6170
-
-            EventMachine::start_server host, port, Execute
-          end
-        }
-        Thread.join(@execute)
         Thread.join(@sync)
       end
 

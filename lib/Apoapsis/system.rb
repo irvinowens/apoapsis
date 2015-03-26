@@ -2,6 +2,9 @@
 The Apoapsis system class will provide methods to allow interaction with the
 underlying machine.
 =end
+
+require 'facter'
+
 module Apoapsis
   class System
     # Will return the load average, only will work on linux/unix (cygwin)
@@ -33,6 +36,15 @@ module Apoapsis
         end
       end
       return map
+    end
+
+    # Will return the number of cores in this machine, we would
+    # like to host one worker thread per core, some core will
+    # have the overhead of the queue management and will have
+    # the overhead of the communication processes
+
+    def self.get_processors
+      return Facter.value('processors')['count']
     end
   end
 end
