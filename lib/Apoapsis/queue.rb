@@ -5,7 +5,7 @@
 # Eventually this will incorporate some sort of distributed
 # queuing system
 
-require 'state'
+require 'apoapsis/state'
 
 module Apoapsis
   class Queue

@@ -3,7 +3,7 @@
 
 require 'eventmachine'
 require 'logger'
-require 'queue'
+require 'apoapsis/queue'
 require 'singleton'
 
 module Apoapsis

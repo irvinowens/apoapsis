@@ -5,7 +5,10 @@ functional style.  It is not intended to be purely functional, only as
 functional as it can be while still being ruby and being practical.
 
 It provides heavyweight process coordination and lightweight thread
-management alongside state management
+management alongside state management.  On second thought, it is probably
+beneficial to only use lightweight process management as it won't thwart the
+branch prediction, and I'd guess that the overhead of multiple processes would
+not be worth the deterioration of performance.  I could be wrong though.
 
 ## Installation
 
